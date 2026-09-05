@@ -13,5 +13,6 @@ class Settings(BaseSettings):
     virus_total_api_key: str | None = None
     allowed_origins: str = "http://localhost:5173"
     environment: str = "development"
+    trusted_proxy_headers: bool = False
 
 settings = Settings()

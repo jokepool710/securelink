@@ -1,7 +1,8 @@
 import { type ChangeEvent, type DragEvent, type FormEvent, type KeyboardEvent, useRef, useState } from "react";
 import type { AnalysisResult, PlainObject, QrResponse } from "../types";
 
-const API_BASE = (import.meta.env.VITE_API_BASE || "http://localhost:8000").replace(/\/$/, "");
+// A same-origin production deployment (such as Vercel) needs no public API URL.
+const API_BASE = (import.meta.env.VITE_API_BASE ?? (import.meta.env.PROD ? "" : "http://localhost:8000")).replace(/\/$/, "");
 
 function asObject(value: unknown): value is PlainObject {
   return typeof value === "object" && value !== null;

@@ -47,6 +47,24 @@ Enable HTTPS and HSTS at the public reverse proxy or platform ingress. HSTS is i
 
 The FastAPI interactive documentation, ReDoc, and OpenAPI schema are available in development only. Setting `ENVIRONMENT=production` disables `/docs`, `/redoc`, and `/openapi.json`. Public production API consumers should rely on the versioned repository documentation rather than an unintentionally exposed schema endpoint.
 
+## Vercel deployment
+
+SecureLink is configured to deploy to Vercel as one HTTPS origin: Vite static output at `/` and the FastAPI ASGI function at `/api/*`. The production frontend therefore defaults to the same origin and does not need a public `VITE_API_BASE`; retain that variable only for a deliberately separate API origin.
+
+Before making the Vercel project public, set these Production environment variables in its dashboard or CLI secret store:
+
+| Variable | Value |
+|---|---|
+| `ENVIRONMENT` | `production` |
+| `ALLOWED_ORIGINS` | The exact production deployment origin, for example `https://securelink.vercel.app` |
+| `TRUSTED_PROXY_HEADERS` | `true` |
+| `ENABLE_EXTERNAL_INTEL` | `false` unless external URL sharing is deliberately enabled |
+| `VIRUS_TOTAL_API_KEY` | Only when external intelligence is explicitly enabled |
+
+`TRUSTED_PROXY_HEADERS` must remain false outside a trusted edge deployment. On Vercel, `x-vercel-forwarded-for` is Vercel's sanitized client address, so enabling it preserves meaningful per-client application limits rather than treating a shared proxy address as every user.
+
+Configure a Vercel Firewall rate-limit rule before public launch: apply a fixed-window `429` rate limit by IP to paths beginning `/api/analyze`, with a conservative initial threshold such as 10 requests per minute. The application still applies its endpoint-specific in-memory limits, but Vercel Functions may scale horizontally, so the edge rule is the deployment-wide abuse control. Keep `/api/health` outside that rule.
+
 ## Rate limits and scaling
 
 The current limiter is per-IP and in-memory: 10 URL analyses and 6 QR analyses per minute for each API process. Health checks are exempt. This is appropriate for a single-process MVP, but it is not a shared quota across multiple API replicas. For multi-instance deployments, enforce a complementary rate limit at the ingress and document the policy; do not assume the in-memory counter is globally coordinated.

@@ -1,4 +1,5 @@
 import io
+from ipaddress import ip_address
 import cv2, numpy as np
 from PIL import Image, UnidentifiedImageError
 from fastapi import FastAPI, File, HTTPException, UploadFile, Request
@@ -12,7 +13,19 @@ from .config import settings
 from .models import AnalyzeURLRequest, AnalysisResult, QRResult
 from .service import analyze
 
-limiter=Limiter(key_func=get_remote_address, default_limits=["30/minute"])
+def rate_limit_client_address(request: Request) -> str:
+    """Use Vercel's sanitized client IP only when that trusted edge is configured."""
+    if settings.trusted_proxy_headers:
+        forwarded = request.headers.get("x-vercel-forwarded-for") or request.headers.get("x-forwarded-for")
+        if forwarded:
+            try:
+                return str(ip_address(forwarded.split(",", 1)[0].strip()))
+            except ValueError:
+                pass
+    return get_remote_address(request)
+
+
+limiter=Limiter(key_func=rate_limit_client_address, default_limits=["30/minute"])
 MAX_IMAGE_PIXELS = 20_000_000
 IMAGE_MIME_BY_FORMAT = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
 
