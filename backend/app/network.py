@@ -22,7 +22,10 @@ async def resolve_public(host: str) -> list[str]:
         try:
             response = await resolver.resolve(host, record, lifetime=2)
             answers.extend(str(item) for item in response)
-        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.exception.Timeout): pass
+        except dns.exception.DNSException:
+            # Resolver outages and malformed DNS replies are not evidence of a
+            # private destination, but must never escape as a 500 response.
+            pass
     if not answers: raise ValueError("Hostname did not resolve to a public address")
     blocked = [ip for ip in answers if not is_public_ip(ip)]
     if blocked: raise ValueError("Destination resolves to a non-public address")

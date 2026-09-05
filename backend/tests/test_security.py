@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch
+import dns.exception
 from app.url_tools import parse_url, lexical_evidence, is_public_ip, redact_url
 from app.risk import assess
 from app.network import resolve_public, inspect_redirects
@@ -28,6 +29,12 @@ async def test_localhost_dns_never_reaches_network():
 @pytest.mark.asyncio
 async def test_localhost_subdomain_is_also_rejected_before_dns():
     with pytest.raises(ValueError): await resolve_public("internal.localhost")
+
+@pytest.mark.asyncio
+async def test_dns_resolver_failure_is_a_controlled_unresolved_result():
+    with patch("dns.asyncresolver.Resolver.resolve", new=AsyncMock(side_effect=dns.exception.DNSException)):
+        with pytest.raises(ValueError, match="did not resolve"):
+            await resolve_public("resolver-failure.example")
 
 @pytest.mark.parametrize("url", ["http://[::1]", "http://[::ffff:127.0.0.1]", "http://0x7f000001", "http://2130706433"])
 def test_obfuscated_or_ipv6_local_hosts_do_not_be_normalized_to_public(url):
