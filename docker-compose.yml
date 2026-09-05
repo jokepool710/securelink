@@ -7,10 +7,18 @@ services:
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
   web:
     build: ./frontend
     ports: ["8080:80"]
-    depends_on: [api]
+    depends_on:
+      api:
+        condition: service_healthy
     read_only: true
     tmpfs: [/var/cache/nginx, /var/run, /tmp]
     security_opt: [no-new-privileges:true]

@@ -22,9 +22,14 @@ def parse_url(value: str) -> ParsedURL:
         # Parsing succeeds; never return credentials.
         pass
     try:
-        ascii_host = idna.encode(parts.hostname, uts46=True).decode("ascii")
-    except idna.IDNAError as exc:
-        raise ValueError("Hostname is not a valid IDN") from exc
+        # URLSplit removes IPv6 brackets. Preserve a literal address without
+        # passing its colons through IDNA processing.
+        ascii_host = str(ipaddress.ip_address(parts.hostname))
+    except ValueError:
+        try:
+            ascii_host = idna.encode(parts.hostname, uts46=True).decode("ascii")
+        except idna.IDNAError as exc:
+            raise ValueError("Hostname is not a valid IDN") from exc
     try: port = parts.port
     except ValueError as exc: raise ValueError("Invalid port") from exc
     return ParsedURL(scheme=parts.scheme.lower(), hostname=parts.hostname, ascii_hostname=ascii_host.lower(), port=port,

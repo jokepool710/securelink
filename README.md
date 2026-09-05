@@ -15,7 +15,7 @@ It does not classify links as safe, execute page JavaScript, crawl content, or p
 
 ## Run locally
 
-Copy `.env.example` to `.env`, then run `docker compose up --build`. Open `http://localhost:8080`; the standalone development front end is available with `npm install && npm run dev` in `frontend`.
+Copy `.env.example` to `.env`, then run `docker-compose up --build`. Open `http://localhost:8080`; the standalone development front end is available with `pnpm install --frozen-lockfile && pnpm run dev` in `frontend`.
 
 Run backend tests after installing backend dependencies:
 

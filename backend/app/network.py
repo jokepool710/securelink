@@ -7,6 +7,15 @@ from .url_tools import parse_url, is_public_ip
 
 async def resolve_public(host: str) -> list[str]:
     # Resolve every A/AAAA answer and reject the host if any answer is non-public.
+    if host.lower() == "localhost" or host.lower().endswith(".localhost"):
+        raise ValueError("Destination is a non-public address")
+    try:
+        if not is_public_ip(host):
+            raise ValueError("Destination is a non-public address")
+        return [host]
+    except ValueError as exc:
+        if str(exc) == "Destination is a non-public address":
+            raise
     answers: list[str] = []
     resolver = dns.asyncresolver.Resolver()
     for record in ("A", "AAAA"):
@@ -25,7 +34,10 @@ async def inspect_redirects(initial: str) -> tuple[list[RedirectHop], list[str],
             parsed = parse_url(current)
             try: ips = await resolve_public(parsed.ascii_hostname); all_ips.extend(ips)
             except ValueError as err:
-                hops.append(RedirectHop(url=current,host=parsed.ascii_hostname,blocked_reason=str(err))); evidence.append(Evidence(id="ssrf-block",severity="high",confidence=1,title="Unsafe destination blocked",explanation="SecureLink did not connect because the destination was not publicly routable.",details={}))
+                reason = str(err)
+                blocked = "non-public" in reason
+                hops.append(RedirectHop(url=current,host=parsed.ascii_hostname,blocked_reason=reason))
+                evidence.append(Evidence(id="ssrf-block" if blocked else "unresolved",severity="high" if blocked else "info",confidence=1,title="Unsafe destination blocked" if blocked else "Destination could not be safely resolved",explanation="SecureLink did not connect because the destination was not publicly routable." if blocked else "SecureLink could not resolve a public address, so it did not connect.",details={}))
                 break
             try:
                 # Connect to the validated address, rather than letting a later client-side
