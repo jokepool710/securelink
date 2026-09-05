@@ -7,7 +7,7 @@ SecureLink is a production-minded URL and QR destination inspector. It explains 
 - FastAPI URL analysis with structured parsing, Unicode/Punycode, encoded URL, IP-host, deceptive credential, lexical brand, subdomain, port, and TLD-context signals.
 - Manually bounded redirect inspection that resolves and validates each hop before connecting to the selected public IP; no browser/JavaScript execution.
 - TLS metadata inspection over a validated destination, in-memory local QR decoding, strict upload controls, rate limits, and no URL/image persistence.
-- React/TypeScript UI with simple and technical views, Docker hardening, SSRF/security tests, controlled lab, and documented threat model.
+- React/TypeScript UI with simple and technical views, SSRF/security tests, a controlled lab, documented threat model, and Docker deployment configuration with non-root/read-only/capability-drop controls. Container verification requires a working Docker engine.
 
 ## Deliberate limits
 
@@ -19,6 +19,6 @@ Copy `.env.example` to `.env`, then run `docker-compose up --build`. Open `http:
 
 Run backend tests after installing backend dependencies:
 
-`python -m pytest backend/tests`
+`python -m pytest -q`
 
 Read [research](docs/RESEARCH.md), [threat model](docs/THREAT_MODEL.md), [security tests](docs/SECURITY_TESTING.md), and [interview notes](docs/INTERVIEW_NOTES.md) before deployment.

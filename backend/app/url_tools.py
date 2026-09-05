@@ -50,7 +50,12 @@ def skeleton(host: str) -> str:
 
 def redact_url(value: str) -> str:
     """Preserve a useful URL display while removing username/password data."""
-    parts = urlsplit(value)
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        # A remote Location header is untrusted; never reflect a malformed
+        # value (which could itself contain userinfo) back to the caller.
+        return "<invalid URL>"
     if not parts.hostname:
         return value
     host = parts.hostname
@@ -59,7 +64,7 @@ def redact_url(value: str) -> str:
     try:
         port = parts.port
     except ValueError:
-        port = None
+        return "<invalid URL>"
     netloc = host if port is None else f"{host}:{port}"
     return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 

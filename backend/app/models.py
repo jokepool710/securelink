@@ -1,11 +1,12 @@
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Literal
 
 Severity = Literal["info", "low", "medium", "high", "critical"]
 
 class AnalyzeURLRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     url: str = Field(min_length=1, max_length=4096)
-    external_intelligence: bool = False
+    external_intelligence: StrictBool = False
 
 class Evidence(BaseModel):
     id: str

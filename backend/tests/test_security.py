@@ -1,9 +1,10 @@
+import asyncio
 import pytest
 from unittest.mock import AsyncMock, patch
 import dns.exception
 from app.url_tools import parse_url, lexical_evidence, is_public_ip, redact_url
 from app.risk import assess
-from app.network import resolve_public, inspect_redirects
+from app.network import resolve_public, inspect_redirects, _bounded_request
 
 @pytest.mark.parametrize("address",["127.0.0.1","10.0.0.1","169.254.169.254","::1","fc00::1","0.0.0.0"])
 def test_non_public_addresses_are_rejected(address): assert not is_public_ip(address)
@@ -25,6 +26,10 @@ def test_score_never_treats_no_signals_as_safe_guarantee():
 @pytest.mark.asyncio
 async def test_localhost_dns_never_reaches_network():
     with pytest.raises(ValueError): await resolve_public("localhost")
+
+@pytest.mark.asyncio
+async def test_trailing_dot_localhost_never_reaches_network():
+    with pytest.raises(ValueError): await resolve_public("localhost.")
 
 @pytest.mark.asyncio
 async def test_localhost_subdomain_is_also_rejected_before_dns():
@@ -54,3 +59,29 @@ async def test_redirect_target_is_validated_before_any_connection():
     assert request.await_count == 1
     assert hops[-1].blocked_reason == "Destination is a non-public address"
     assert any(item.id == "ssrf-block" for item in evidence)
+
+@pytest.mark.asyncio
+async def test_malformed_redirect_target_is_not_reflected_or_followed():
+    with patch("app.network.resolve_public", new=AsyncMock(return_value=["93.184.216.34"])), patch("app.network._bounded_request", new=AsyncMock(return_value=(302, "http://[::1"))) as request:
+        hops, _, evidence = await inspect_redirects("http://public.example/")
+    assert request.await_count == 1
+    assert hops[-1].location == "<invalid URL>"
+    assert hops[-1].blocked_reason == "Invalid redirect target"
+    assert any(item.id == "invalid-redirect" for item in evidence)
+
+@pytest.mark.asyncio
+async def test_pinned_request_rejects_malformed_http_status_line():
+    async def malformed_response(reader, writer):
+        await reader.readuntil(b"\r\n\r\n")
+        writer.write(b"NOT HTTP\r\n\r\n")
+        await writer.drain()
+        writer.close()
+
+    server = await asyncio.start_server(malformed_response, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+    try:
+        with pytest.raises(ValueError, match="Malformed HTTP response"):
+            await _bounded_request(parse_url(f"http://example.test:{port}/"), "127.0.0.1")
+    finally:
+        server.close()
+        await server.wait_closed()

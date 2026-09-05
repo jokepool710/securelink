@@ -7,7 +7,8 @@ from .url_tools import parse_url, is_public_ip, redact_url
 
 async def resolve_public(host: str) -> list[str]:
     # Resolve every A/AAAA answer and reject the host if any answer is non-public.
-    if host.lower() == "localhost" or host.lower().endswith(".localhost"):
+    normalized_host = host.rstrip(".").lower()
+    if normalized_host == "localhost" or normalized_host.endswith(".localhost"):
         raise ValueError("Destination is a non-public address")
     try:
         if not is_public_ip(host):
@@ -48,11 +49,22 @@ async def inspect_redirects(initial: str) -> tuple[list[RedirectHop], list[str],
                 status, location = await _bounded_request(parsed, ips[0])
             except (OSError, asyncio.TimeoutError, ssl.SSLError, ValueError) as err:
                 hops.append(RedirectHop(url=redact_url(current),host=parsed.ascii_hostname,blocked_reason="Request failed")); evidence.append(Evidence(id="unreachable",severity="info",confidence=.8,title="Destination not reached",explanation="The public endpoint could not be inspected within the safety limits.",details={"kind":type(err).__name__})); break
-            resolved_location = urljoin(current, location) if location else None
+            try:
+                resolved_location = urljoin(current, location) if location else None
+            except ValueError:
+                hops.append(RedirectHop(url=redact_url(current),host=parsed.ascii_hostname,status_code=status,location="<invalid URL>",blocked_reason="Invalid redirect target"))
+                evidence.append(Evidence(id="invalid-redirect",severity="info",confidence=1,title="Invalid redirect target",explanation="The destination returned a malformed redirect target, so SecureLink did not follow it.",details={}))
+                break
             hops.append(RedirectHop(url=redact_url(current),host=parsed.ascii_hostname,status_code=status,location=redact_url(resolved_location) if resolved_location else None))
             if status in {301,302,303,307,308} and location:
-                next_url=resolved_location
-                if parse_url(next_url).scheme not in {"http","https"}: break
+                next_url = resolved_location
+                try:
+                    next_parsed = parse_url(next_url)
+                except ValueError:
+                    hops[-1].blocked_reason = "Invalid redirect target"
+                    evidence.append(Evidence(id="invalid-redirect",severity="info",confidence=1,title="Invalid redirect target",explanation="The destination returned a malformed redirect target, so SecureLink did not follow it.",details={}))
+                    break
+                if next_parsed.scheme not in {"http","https"}: break
                 current=next_url; continue
             break
     else: evidence.append(Evidence(id="redirect-limit",severity="medium",confidence=.9,title="Redirect limit reached",explanation="Analysis stopped after the configured redirect limit.",details={"limit":settings.max_redirects}))
@@ -67,12 +79,23 @@ async def _bounded_request(parsed: ParsedURL, ip: str) -> tuple[int, str | None]
     try:
         target = parsed.path or "/"
         if parsed.query: target += "?" + parsed.query
-        request = f"GET {target} HTTP/1.1\r\nHost: {parsed.ascii_hostname}\r\nUser-Agent: SecureLink/1.0 redirect-inspector\r\nAccept: */*\r\nRange: bytes=0-0\r\nConnection: close\r\n\r\n"
+        default_port = 443 if parsed.scheme == "https" else 80
+        host_header = parsed.ascii_hostname if parsed.port in {None, default_port} else f"{parsed.ascii_hostname}:{parsed.port}"
+        request = f"GET {target} HTTP/1.1\r\nHost: {host_header}\r\nUser-Agent: SecureLink/1.0 redirect-inspector\r\nAccept: */*\r\nRange: bytes=0-0\r\nConnection: close\r\n\r\n"
         writer.write(request.encode("ascii", "strict")); await writer.drain()
-        raw = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), settings.request_timeout_seconds)
+        try:
+            raw = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), settings.request_timeout_seconds)
+        except (asyncio.IncompleteReadError, asyncio.LimitOverrunError) as exc:
+            raise ValueError("Malformed HTTP response") from exc
         if len(raw) > 32_768: raise ValueError("Header section too large")
         lines=raw.decode("iso-8859-1").split("\r\n")
-        status=int(lines[0].split()[1]); headers={}
+        try:
+            status=int(lines[0].split()[1])
+        except (IndexError, ValueError) as exc:
+            raise ValueError("Malformed HTTP response") from exc
+        if not 100 <= status <= 599:
+            raise ValueError("Malformed HTTP response")
+        headers={}
         for line in lines[1:]:
             if ":" in line:
                 key,value=line.split(":",1); headers[key.lower()]=value.strip()

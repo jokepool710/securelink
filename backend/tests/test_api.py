@@ -14,6 +14,15 @@ def test_url_validation_returns_controlled_errors():
         assert response.status_code == 422
         assert "traceback" not in response.text.lower()
 
+def test_url_request_does_not_coerce_external_intelligence_opt_in():
+    for payload in (
+        {"url": "https://example.com", "external_intelligence": "yes"},
+        {"url": "https://example.com", "external_intelligence": 1},
+        {"url": "https://example.com", "unexpected": True},
+    ):
+        response = client.post("/api/analyze/url", json=payload)
+        assert response.status_code == 422
+
 def test_private_literal_is_reported_as_blocked_without_connection():
     response = client.post("/api/analyze/url", json={"url": "http://127.0.0.1/"})
     body = response.json()
