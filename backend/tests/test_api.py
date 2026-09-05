@@ -9,7 +9,7 @@ def test_health_is_not_rate_limited():
     assert responses[-1].json() == {"status": "ok"}
 
 def test_url_validation_returns_controlled_errors():
-    for payload in ({}, {"url": None}, {"url": 7}, {"url": ""}, {"url": "file:///etc/passwd"}):
+    for payload in ({}, {"url": None}, {"url": 7}, {"url": ""}, {"url": "file:///etc/passwd"}, {"url": "https://example.com/" + "a" * 4096}):
         response = client.post("/api/analyze/url", json=payload)
         assert response.status_code == 422
         assert "traceback" not in response.text.lower()

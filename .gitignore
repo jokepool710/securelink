@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.example
 .venv/
 __pycache__/
 .pytest_cache/
@@ -6,5 +8,12 @@ node_modules/
 .pnpm-store/
 backend/.deps/
 dist/
+build/
 *.pyc
 *.tsbuildinfo
+*.log
+logs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

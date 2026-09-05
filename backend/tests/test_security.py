@@ -47,18 +47,27 @@ def test_obfuscated_or_ipv6_local_hosts_do_not_be_normalized_to_public(url):
     assert parsed.ascii_hostname
 
 @pytest.mark.asyncio
-async def test_redirect_target_is_validated_before_any_connection():
+@pytest.mark.parametrize("redirect_status", [301, 302, 303, 307, 308])
+async def test_redirect_target_is_validated_before_any_connection(redirect_status):
     resolutions = iter([["93.184.216.34"], ValueError("Destination is a non-public address")])
     def resolve_next(host):
         value = next(resolutions)
         if isinstance(value, Exception):
             raise value
         return value
-    with patch("app.network.resolve_public", new=AsyncMock(side_effect=resolve_next)), patch("app.network._bounded_request", new=AsyncMock(return_value=(302, "http://127.0.0.1/private"))) as request:
+    with patch("app.network.resolve_public", new=AsyncMock(side_effect=resolve_next)), patch("app.network._bounded_request", new=AsyncMock(return_value=(redirect_status, "http://127.0.0.1/private"))) as request:
         hops, _, evidence = await inspect_redirects("http://public.example/")
     assert request.await_count == 1
     assert hops[-1].blocked_reason == "Destination is a non-public address"
     assert any(item.id == "ssrf-block" for item in evidence)
+
+@pytest.mark.asyncio
+async def test_redirect_loop_stops_at_the_configured_limit():
+    with patch("app.network.resolve_public", new=AsyncMock(return_value=["93.184.216.34"])), patch("app.network._bounded_request", new=AsyncMock(return_value=(302, "/again"))) as request:
+        hops, _, evidence = await inspect_redirects("http://public.example/again")
+    assert request.await_count == 6
+    assert len(hops) == 6
+    assert any(item.id == "redirect-limit" for item in evidence)
 
 @pytest.mark.asyncio
 async def test_malformed_redirect_target_is_not_reflected_or_followed():

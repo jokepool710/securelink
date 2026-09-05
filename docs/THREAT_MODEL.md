@@ -11,8 +11,8 @@ Attacker-controlled inputs are URLs and QR image bytes. The API, its resolver, o
 - For each hop, SecureLink resolves then opens a socket to the validated numeric address itself. The HTTP `Host` header and TLS SNI retain virtual-host support, while preventing a second resolver lookup from turning a DNS rebind into an internal connection.
 - Redirects are manual, capped at five, and each target is independently parsed and revalidated. Malformed redirect targets and malformed/oversized HTTP headers are contained as inspection failures. No JavaScript, browser, cookies, credentials, proxy configuration, or response body is executed/retained. Header reads have a size cap and requests have a short timeout.
 - QR uploads are content-type allowlisted, byte-limited (5 MB), checked against image magic/format and dimensions before OpenCV decoding, then decoded in memory. They are not stored.
-- The external-intelligence control is a strict JSON boolean, so type coercion cannot accidentally opt a request into URL sharing. Unknown URL-request fields are rejected.
-- Rate limits reduce cheap resource exhaustion. Production should put a reverse proxy/WAF and shared rate limiter in front of multiple API workers.
+- The external-intelligence control is a strict JSON boolean, so type coercion cannot accidentally opt a request into URL sharing. VirusTotal is contacted only when this explicit request, the enable flag, and an API key are all present. Unknown URL-request fields are rejected.
+- Rate limits reduce cheap resource exhaustion. They are in-memory and keyed by the immediate client address in this single-process MVP. Production should put a reverse proxy/WAF and shared rate limiter in front of multiple API workers.
 
 ## Residual risks
 
