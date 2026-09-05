@@ -4,7 +4,9 @@ from app.main import app
 client = TestClient(app)
 
 def test_health_is_not_rate_limited():
-    assert client.get("/api/health").json() == {"status": "ok"}
+    responses = [client.get("/api/health") for _ in range(31)]
+    assert all(response.status_code == 200 for response in responses)
+    assert responses[-1].json() == {"status": "ok"}
 
 def test_url_validation_returns_controlled_errors():
     for payload in ({}, {"url": None}, {"url": 7}, {"url": ""}, {"url": "file:///etc/passwd"}):

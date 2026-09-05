@@ -18,6 +18,7 @@ app.add_middleware(CORSMiddleware,allow_origins=[x.strip() for x in settings.all
 @app.exception_handler(RateLimitExceeded)
 async def limited(request:Request, exc:RateLimitExceeded): return JSONResponse(status_code=429,content={"detail":"Too many requests"})
 @app.get("/api/health")
+@limiter.exempt
 async def health(): return {"status":"ok"}
 @app.post("/api/analyze/url",response_model=AnalysisResult)
 @limiter.limit("10/minute")
