@@ -14,7 +14,11 @@ services:
       retries: 3
       start_period: 10s
   web:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        # Vite embeds this public API address at build time; it must never contain a secret.
+        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8000}
     ports: ["8080:80"]
     depends_on:
       api:

@@ -148,6 +148,12 @@ docker compose up --build
 
 Docker runtime verification on a development machine requires a working Docker engine and, on Windows, hardware virtualization. It was not runnable on the development host used for the security audit because virtualization support was unavailable.
 
+## Deployment
+
+SecureLink is deliberately small: a static React frontend makes HTTPS requests to a single FastAPI API. The API performs the controlled outbound inspection; browsers never receive an SSRF-capable network client or a provider credential.
+
+Before deploying, set ENVIRONMENT=production, configure ALLOWED_ORIGINS to the exact public frontend origin, and set the public build-time VITE_API_BASE to the API's HTTPS URL. VITE_API_BASE is included in the frontend bundle, so it must never be a secret. Keep ENABLE_EXTERNAL_INTEL=false unless VirusTotal sharing is a deliberate product and privacy decision. See [deployment notes](docs/DEPLOYMENT.md) for the full configuration and operational boundary.
+
 ## Limitations
 
 - Inspection is not proof that a destination is safe.
@@ -170,6 +176,7 @@ Docker runtime verification on a development machine requires a working Docker e
 - [Security testing](docs/SECURITY_TESTING.md)
 - [Research and product positioning](docs/RESEARCH.md)
 - [Interview notes](docs/INTERVIEW_NOTES.md)
+- [Deployment notes](docs/DEPLOYMENT.md)
 - [Security disclosure policy](SECURITY.md)
 
 ## License

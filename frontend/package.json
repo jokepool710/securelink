@@ -1,1 +1,1 @@
-{"packageManager":"pnpm@11.19.0","scripts":{"dev":"vite","build":"tsc -b && vite build"},"dependencies":{"vite":"latest","typescript":"latest","react":"latest","react-dom":"latest"},"devDependencies":{"@types/react":"latest","@types/react-dom":"latest"}}
+{"packageManager":"pnpm@11.19.0","scripts":{"dev":"vite","typecheck":"tsc --noEmit","build":"tsc -b && vite build"},"dependencies":{"vite":"latest","typescript":"latest","react":"latest","react-dom":"latest"},"devDependencies":{"@types/react":"latest","@types/react-dom":"latest"}}
