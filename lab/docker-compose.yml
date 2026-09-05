@@ -1,0 +1,11 @@
+# Isolated security-test lab only. Do not expose the metadata mock beyond this network.
+services:
+  redirector:
+    image: nginx:1.27-alpine
+    volumes: [./nginx.conf:/etc/nginx/conf.d/default.conf:ro]
+    networks: [lab]
+  metadata-mock:
+    image: hashicorp/http-echo:1.0
+    command: ["-text=not reachable from SecureLink"]
+    networks: [lab]
+networks: {lab: {internal: true}}
