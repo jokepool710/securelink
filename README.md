@@ -1,12 +1,29 @@
 # SecureLink
 
+[![SecureLink CI](https://github.com/jokepool710/securelink/actions/workflows/ci.yml/badge.svg)](https://github.com/jokepool710/securelink/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-d5ff41.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg)](https://www.python.org/)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
+
 SecureLink is a privacy-conscious URL and QR security analyzer that safely inspects suspicious destinations and produces an explainable risk assessment.
+
+> **Launch status:** the codebase is release-ready and its public Vercel deployment is awaiting account sign-in and live verification. A public demo URL will be added here only after those checks pass.
+
+![Controlled SecureLink SSRF safety-test result](docs/screenshots/controlled-ssrf-result.svg)
+
+*A sanitized capture based on an executed local SSRF safety test. `127.0.0.1` was classified as high risk and blocked before an outbound request. It is a controlled result, not a claim about an external website.*
 
 ## Problem
 
 Phishing links, QR-code destinations, deceptive domains, URL obfuscation, and redirect chains make it difficult to tell where a link leads before opening it. HTTPS protects a connection in transit; it does not establish that the destination is legitimate. Reputation services can add context, but a single safe/unsafe label does not explain what a user should inspect.
 
 SecureLink is an inspection aid. It does not promise that a URL is safe and does not replace endpoint protection or incident response.
+
+## Why this project is useful
+
+SecureLink is designed for people who need to understand a suspicious URL before trusting it—not just receive a binary warning. It brings together URL scanning, phishing-signal explanation, QR-code destination inspection, redirect analysis, DNS/TLS context, homograph detection, and SSRF-aware outbound inspection in one small, documented codebase.
+
+Relevant discovery terms: **cybersecurity, phishing detection, URL scanner, QR security, link analysis, redirect analysis, homograph detection, FastAPI, React, TypeScript, SSRF defense**.
 
 ## What SecureLink does
 

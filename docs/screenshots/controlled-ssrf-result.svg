@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title description">
+  <title id="title">SecureLink controlled SSRF safety test result</title>
+  <desc id="description">A sanitized visual capture of SecureLink blocking a localhost URL as a high-risk, non-public destination.</desc>
+  <defs>
+    <linearGradient id="accent" x1="0" x2="1">
+      <stop offset="0" stop-color="#55eaff"/>
+      <stop offset=".42" stop-color="#f066d7"/>
+      <stop offset=".72" stop-color="#ffe45b"/>
+      <stop offset="1" stop-color="#bff54a"/>
+    </linearGradient>
+    <pattern id="grid" width="52" height="52" patternUnits="userSpaceOnUse">
+      <path d="M52 0H0V52" fill="none" stroke="#ffffff" stroke-opacity=".045"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="900" fill="#0b0c0e"/>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <g fill="#efeee8" font-family="Arial, Helvetica, sans-serif">
+    <text x="100" y="108" font-size="36" font-weight="800" letter-spacing="-2">SECURE<tspan fill="#d5ff41">LINK</tspan></text>
+    <text x="100" y="158" fill="#b9bbb4" font-family="monospace" font-size="16" letter-spacing="2">CONTROLLED LOCAL SAFETY TEST / SSRF DEFENSE</text>
+    <rect x="100" y="205" width="1400" height="3" fill="url(#accent)"/>
+    <text x="100" y="300" fill="#bdbeb8" font-family="monospace" font-size="15" letter-spacing="2">ANALYSIS COMPLETE</text>
+    <text x="100" y="345" fill="#ff9690" font-family="monospace" font-size="18" font-weight="700" letter-spacing="2">HIGH RISK</text>
+    <text x="100" y="475" font-size="148" font-weight="800" letter-spacing="-10">55</text>
+    <text x="356" y="466" fill="#aaa" font-family="monospace" font-size="22">/100</text>
+    <rect x="100" y="515" width="300" height="6" fill="#3a3c3c"/>
+    <rect x="100" y="515" width="165" height="6" fill="#ff7c78"/>
+    <text x="500" y="345" font-size="44" font-weight="700" letter-spacing="-2">The link targets an IP address</text>
+    <text x="500" y="397" font-size="44" font-weight="700" letter-spacing="-2">rather than a named website.</text>
+    <rect x="500" y="440" width="780" height="49" rx="3" fill="#1d2023"/>
+    <text x="522" y="472" fill="#c8eaff" font-family="monospace" font-size="18">http://127.0.0.1/</text>
+    <rect x="500" y="535" width="780" height="116" fill="#15171a" stroke="#ffffff" stroke-opacity=".16"/>
+    <text x="528" y="574" fill="#ff9690" font-family="monospace" font-size="15" font-weight="700" letter-spacing="1">HIGH SIGNAL / 100% CONFIDENCE</text>
+    <text x="528" y="611" font-size="23" font-weight="700">Unsafe destination blocked</text>
+    <text x="528" y="636" fill="#c3c4bd" font-size="17">SecureLink did not connect because the destination was not publicly routable.</text>
+    <rect x="1315" y="300" width="185" height="265" fill="#15171a" stroke="#d5ff41" stroke-width="2"/>
+    <text x="1341" y="342" fill="#bdbeb8" font-family="monospace" font-size="13" letter-spacing="1">RECOMMENDATION</text>
+    <text x="1341" y="394" font-size="20" font-weight="700">Do not open</text>
+    <text x="1341" y="424" font-size="20" font-weight="700">this link until</text>
+    <text x="1341" y="454" font-size="20" font-weight="700">you independently</text>
+    <text x="1341" y="484" font-size="20" font-weight="700">verify it.</text>
+    <rect x="100" y="726" width="1400" height="1" fill="#ffffff" fill-opacity=".2"/>
+    <text x="100" y="772" fill="#d5ff41" font-family="monospace" font-size="15" letter-spacing="1">DESTINATION STATUS</text>
+    <text x="100" y="814" font-size="26" font-weight="700">Blocked before outbound inspection</text>
+    <text x="905" y="772" fill="#d5ff41" font-family="monospace" font-size="15" letter-spacing="1">REDIRECT RECORD</text>
+    <text x="905" y="814" font-size="26" font-weight="700">Destination is a non-public address</text>
+  </g>
+</svg>
