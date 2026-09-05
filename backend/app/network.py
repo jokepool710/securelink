@@ -3,7 +3,7 @@ from urllib.parse import urljoin
 import dns.asyncresolver
 from .config import settings
 from .models import RedirectHop, ParsedURL, Evidence
-from .url_tools import parse_url, is_public_ip
+from .url_tools import parse_url, is_public_ip, redact_url
 
 async def resolve_public(host: str) -> list[str]:
     # Resolve every A/AAAA answer and reject the host if any answer is non-public.
@@ -36,7 +36,7 @@ async def inspect_redirects(initial: str) -> tuple[list[RedirectHop], list[str],
             except ValueError as err:
                 reason = str(err)
                 blocked = "non-public" in reason
-                hops.append(RedirectHop(url=current,host=parsed.ascii_hostname,blocked_reason=reason))
+                hops.append(RedirectHop(url=redact_url(current),host=parsed.ascii_hostname,blocked_reason=reason))
                 evidence.append(Evidence(id="ssrf-block" if blocked else "unresolved",severity="high" if blocked else "info",confidence=1,title="Unsafe destination blocked" if blocked else "Destination could not be safely resolved",explanation="SecureLink did not connect because the destination was not publicly routable." if blocked else "SecureLink could not resolve a public address, so it did not connect.",details={}))
                 break
             try:
@@ -44,10 +44,11 @@ async def inspect_redirects(initial: str) -> tuple[list[RedirectHop], list[str],
                 # DNS lookup choose a rebinding target. Host/SNI preserve virtual hosting.
                 status, location = await _bounded_request(parsed, ips[0])
             except (OSError, asyncio.TimeoutError, ssl.SSLError, ValueError) as err:
-                hops.append(RedirectHop(url=current,host=parsed.ascii_hostname,blocked_reason="Request failed")); evidence.append(Evidence(id="unreachable",severity="info",confidence=.8,title="Destination not reached",explanation="The public endpoint could not be inspected within the safety limits.",details={"kind":type(err).__name__})); break
-            hops.append(RedirectHop(url=current,host=parsed.ascii_hostname,status_code=status,location=location))
+                hops.append(RedirectHop(url=redact_url(current),host=parsed.ascii_hostname,blocked_reason="Request failed")); evidence.append(Evidence(id="unreachable",severity="info",confidence=.8,title="Destination not reached",explanation="The public endpoint could not be inspected within the safety limits.",details={"kind":type(err).__name__})); break
+            resolved_location = urljoin(current, location) if location else None
+            hops.append(RedirectHop(url=redact_url(current),host=parsed.ascii_hostname,status_code=status,location=redact_url(resolved_location) if resolved_location else None))
             if status in {301,302,303,307,308} and location:
-                next_url=urljoin(current, location)
+                next_url=resolved_location
                 if parse_url(next_url).scheme not in {"http","https"}: break
                 current=next_url; continue
             break

@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from app.url_tools import parse_url, lexical_evidence, is_public_ip
+from app.url_tools import parse_url, lexical_evidence, is_public_ip, redact_url
 from app.risk import assess
 from app.network import resolve_public, inspect_redirects
 
@@ -10,6 +10,13 @@ def test_embedded_credentials_and_brand_are_explained():
     raw="https://paypal.com@paypa1-security.zip/login%20%20%20%20"
     evidence=lexical_evidence(parse_url(raw),raw); ids={x.id for x in evidence}
     assert "credentials" in ids and any(i.startswith("brand-") for i in ids)
+    assert redact_url(raw) == "https://paypa1-security.zip/login%20%20%20%20"
+
+@pytest.mark.parametrize("url", ["https://pаypal.com", "https://раураl.com"])
+def test_cyrillic_paypal_homographs_trigger_brand_evidence(url):
+    ids = {item.id for item in lexical_evidence(parse_url(url), url)}
+    assert "idn" in ids
+    assert "brand-paypal" in ids
 def test_only_web_protocols_are_accepted():
     with pytest.raises(ValueError): parse_url("file:///etc/passwd")
 def test_score_never_treats_no_signals_as_safe_guarantee():

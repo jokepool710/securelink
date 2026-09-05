@@ -1,11 +1,15 @@
 import ipaddress, re, unicodedata
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 import idna
 from .models import ParsedURL, Evidence
 
 SUSPICIOUS_TLDS = {"zip", "mov", "top", "click", "gq", "work", "country"}
 BRANDS = {"paypal": ["paypal.com"], "microsoft": ["microsoft.com", "live.com"], "google": ["google.com"], "apple": ["apple.com"], "amazon": ["amazon.com"]}
-CONFUSABLES = str.maketrans({"0":"o", "1":"l", "3":"e", "4":"a", "5":"s", "7":"t", "@":"a", "$":"s"})
+ASCII_SUBSTITUTIONS = str.maketrans({"0":"o", "1":"l", "3":"e", "4":"a", "5":"s", "7":"t", "@":"a", "$":"s"})
+# Deliberately narrow, curated set used for brand-lookalike skeletons. This is
+# not a Unicode security verdict; it preserves likely visual substitutions so
+# mixed-script names can be compared with the local brand dataset.
+CONFUSABLES = {"а":"a", "е":"e", "о":"o", "р":"p", "с":"c", "х":"x", "у":"y", "і":"i", "ј":"j", "к":"k", "м":"m", "т":"t", "Α":"a", "Β":"b", "Ε":"e", "Η":"h", "Ι":"i", "Κ":"k", "Μ":"m", "Ν":"n", "Ο":"o", "Ρ":"p", "Τ":"t", "Υ":"y", "Χ":"x", "α":"a", "β":"b", "ε":"e", "ι":"i", "κ":"k", "ο":"o", "ρ":"p", "τ":"t", "υ":"y", "χ":"x"}
 
 def normalize_input(value: str) -> str:
     value = value.strip()
@@ -40,7 +44,24 @@ def is_public_ip(address: str) -> bool:
     return ip.is_global and not ip.is_multicast and not ip.is_unspecified
 
 def skeleton(host: str) -> str:
-    return unicodedata.normalize("NFKD", host).encode("ascii", "ignore").decode().lower().translate(CONFUSABLES).replace("-", "")
+    normalized = unicodedata.normalize("NFKD", host).lower()
+    mapped = "".join(CONFUSABLES.get(char, char) for char in normalized)
+    return mapped.encode("ascii", "ignore").decode().translate(ASCII_SUBSTITUTIONS).replace("-", "")
+
+def redact_url(value: str) -> str:
+    """Preserve a useful URL display while removing username/password data."""
+    parts = urlsplit(value)
+    if not parts.hostname:
+        return value
+    host = parts.hostname
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    try:
+        port = parts.port
+    except ValueError:
+        port = None
+    netloc = host if port is None else f"{host}:{port}"
+    return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 
 def lexical_evidence(parsed: ParsedURL, raw: str) -> list[Evidence]:
     e: list[Evidence] = []
