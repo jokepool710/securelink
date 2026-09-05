@@ -1,7 +1,13 @@
 from fastapi.testclient import TestClient
-from app.main import app
+from app.main import app, documentation_routes
 
 client = TestClient(app)
+
+
+def test_production_disables_all_api_documentation_routes():
+    assert documentation_routes("production") == (None, None, None)
+    assert documentation_routes(" Production ") == (None, None, None)
+    assert documentation_routes("development") == ("/docs", "/redoc", "/openapi.json")
 
 def test_health_is_not_rate_limited():
     responses = [client.get("/api/health") for _ in range(31)]

@@ -15,7 +15,17 @@ from .service import analyze
 limiter=Limiter(key_func=get_remote_address, default_limits=["30/minute"])
 MAX_IMAGE_PIXELS = 20_000_000
 IMAGE_MIME_BY_FORMAT = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
-app=FastAPI(title="SecureLink API", version="0.1.0", docs_url=None if settings.environment=="production" else "/docs")
+
+
+def documentation_routes(environment: str) -> tuple[str | None, str | None, str | None]:
+    """Keep the API schema and interactive documentation off public production instances."""
+    if environment.strip().casefold() == "production":
+        return None, None, None
+    return "/docs", "/redoc", "/openapi.json"
+
+
+docs_url, redoc_url, openapi_url = documentation_routes(settings.environment)
+app=FastAPI(title="SecureLink API", version="0.1.0", docs_url=docs_url, redoc_url=redoc_url, openapi_url=openapi_url)
 app.state.limiter=limiter; app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(CORSMiddleware,allow_origins=[x.strip() for x in settings.allowed_origins.split(",")],allow_methods=["POST","GET"],allow_headers=["Content-Type"],allow_credentials=False)
 @app.exception_handler(RateLimitExceeded)

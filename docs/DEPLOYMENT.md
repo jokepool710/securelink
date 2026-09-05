@@ -37,6 +37,16 @@ VITE_API_BASE is a public build-time value embedded in static JavaScript. Never 
 
 Use an HTTPS-terminating reverse proxy or platform ingress for both public endpoints. Do not use a wildcard CORS origin: the API's ALLOWED_ORIGINS setting is the source of truth. If frontend and API use different origins, the frontend origin must be present exactly in that comma-separated setting.
 
+## Browser response policy
+
+The production Nginx configuration sends a restrictive static-app policy: scripts, styles, images, fonts, forms, framing, and object content are limited to the application itself (with data URLs only for images). The frontend has no external font or asset dependency. Its CSP allows secure HTTPS API connections because VITE_API_BASE is chosen at build time; local Docker development also permits http://localhost:8000. API origin configuration remains explicit in the backend CORS setting.
+
+Enable HTTPS and HSTS at the public reverse proxy or platform ingress. HSTS is intentionally an edge concern here because the supplied Nginx container serves HTTP behind that TLS terminator. Verify the effective public headers after a real deployment; Docker runtime verification is not available on the development host.
+
+## API documentation exposure
+
+The FastAPI interactive documentation, ReDoc, and OpenAPI schema are available in development only. Setting `ENVIRONMENT=production` disables `/docs`, `/redoc`, and `/openapi.json`. Public production API consumers should rely on the versioned repository documentation rather than an unintentionally exposed schema endpoint.
+
 ## Rate limits and scaling
 
 The current limiter is per-IP and in-memory: 10 URL analyses and 6 QR analyses per minute for each API process. Health checks are exempt. This is appropriate for a single-process MVP, but it is not a shared quota across multiple API replicas. For multi-instance deployments, enforce a complementary rate limit at the ingress and document the policy; do not assume the in-memory counter is globally coordinated.
